@@ -28,7 +28,7 @@ class ProcessNightImage:
 
     def convert_to_black_or_white(self):
         (thresh, im_bw) = cv2.threshold(self.input_image, 128, 255,
-                                        cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                                        cv2.THRESH_BINARY)
         print("thresh is", thresh)
         return im_bw
 

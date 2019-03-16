@@ -8,8 +8,8 @@ from utils.process_night_image import ProcessNightImage
 def process_night_image(img, img_out=None):
     # aerial_pic = cv2.imread('/Users/skuppasa/workspace/hackathon/impactathon2019/data/night1.png')
     # input_img = cv2.imread(img)
-    inc_contrast = ProcessNightImage(img).change_constrast()
-    grey = ProcessNightImage(inc_contrast).convert_to_greyscale()
+    # inc_contrast = ProcessNightImage(img).change_constrast()
+    grey = ProcessNightImage(img).convert_to_greyscale()
     bw = ProcessNightImage(grey).convert_to_black_or_white()
     # bw = ProcessNightImage(grey).convert_to_bw_given_thresh(175)
     # cv2.imwrite('bw.png', bw)
@@ -51,9 +51,29 @@ def process_images(argv):
     night_img_bw = process_night_image(night_img, output_night_img)
     map_img_bw = process_map_image(map_img, output_map_img)
 
-    not_night_img = cv2.bitwise_not(night_img_bw)
-    result = cv2.bitwise_and(map_img_bw, not_night_img)
-    # cv2.imwrite(args['output'], result)
+    rows,cols = night_img_bw.shape
+    M = np.float32([[1,0,0],[0,1,-5]])
+    map_img_up = cv2.warpAffine(night_img_bw,M,(cols,rows))
+
+    M = np.float32([[1,0,0],[0,1,5]])
+    map_img_down = cv2.warpAffine(night_img_bw,M,(cols,rows))
+
+    M = np.float32([[1,0,-5],[0,1,0]])
+    map_img_left = cv2.warpAffine(night_img_bw,M,(cols,rows))
+
+    M = np.float32([[1,0,5],[0,1,0]])
+    map_img_right = cv2.warpAffine(night_img_bw,M,(cols,rows))
+
+    result = cv2.bitwise_and(map_img_bw, cv2.bitwise_not(night_img_bw))
+    result1 = cv2.bitwise_and(map_img_bw, cv2.bitwise_not(map_img_up))
+    result2 = cv2.bitwise_and(map_img_bw, cv2.bitwise_not(map_img_down))
+    result3 = cv2.bitwise_and(map_img_bw, cv2.bitwise_not(map_img_left))
+    result4 = cv2.bitwise_and(map_img_bw, cv2.bitwise_not(map_img_right))
+
+    result = cv2.bitwise_and(result, result1)
+    result = cv2.bitwise_and(result, result2)
+    result = cv2.bitwise_and(result, result3)
+    result = cv2.bitwise_and(result, result4)
 
     # convert white to red
     result = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
@@ -61,6 +81,7 @@ def process_images(argv):
 
     # convert black to transparent
     result_transparent = cv2.cvtColor(result, cv2.COLOR_BGR2RGBA)
+
     result_transparent[np.all(result_transparent == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
     result_transparent = cv2.cvtColor(result_transparent, cv2.COLOR_RGBA2RGB)
 
@@ -69,6 +90,7 @@ def process_images(argv):
     final_image = ProcessNightImage(background).blend_non_transparent(result_transparent)
 
     cv2.imwrite(args['output'], final_image)
+
 
 
 if __name__ == '__main__':
