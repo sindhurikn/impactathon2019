@@ -39,6 +39,7 @@ def process_images(argv):
     ap.add_argument("--map_image", help="path to the map image")
     ap.add_argument("--night_image", help="path to night image")
     ap.add_argument("--output", help="path to store output image")
+    ap.add_argument("--background", help="background image to overlay final result on")
     args = vars(ap.parse_args())
     print(args)
     night_img = cv2.imread(args["night_image"])
@@ -50,21 +51,27 @@ def process_images(argv):
     night_img_bw = process_night_image(night_img, output_night_img)
     map_img_bw = process_map_image(map_img, output_map_img)
 
-    # # convert white to red
-    # # map_img_bw = cv2.cvtColor(map_img_bw, cv2.COLOR_RGBA2BGR) cv2.COLORBGR2
-    # map_img_bw[np.where((map_img_bw == [255, 255, 255]).all(axis=2))] = [0, 0, 255]
-    #
-    # # convert black to transparent
-    # map_img_transparent = cv2.cvtColor(map_img_bw, cv2.COLOR_BGR2RGBA)
-    # map_img_transparent[np.all(map_img_transparent == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
-
-    # cv2.imwrite("transparent-red.png", map_img_transparent)
-
     not_night_img = cv2.bitwise_not(night_img_bw)
     result = cv2.bitwise_and(map_img_bw, not_night_img)
-    cv2.imwrite(args['output'], result)
+    # cv2.imwrite(args['output'], result)
+
+    # convert white to red
+    result = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
+    result[np.where((result == [255, 255, 255]).all(axis=2))] = [0, 0, 255]
+
+    # convert black to transparent
+    result_transparent = cv2.cvtColor(result, cv2.COLOR_BGR2RGBA)
+    result_transparent[np.all(result_transparent == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
+    result_transparent = cv2.cvtColor(result_transparent, cv2.COLOR_RGBA2RGB)
+
+    background = cv2.imread(args['background'])
+
+    final_image = ProcessNightImage(background).blend_non_transparent(result_transparent)
+
+    cv2.imwrite(args['output'], final_image)
 
 
 if __name__ == '__main__':
-    # python test.py --map-image <path> --night-image <path>
+    # python src/test.py --map_image <path> --night_image <path> --output <path> --background <path>
+    # Eg: python src/test.py --map_image data/map-no-label1.png --night_image data/night1.png --output data/output.png --background data/map1.png
     process_images(sys.argv)
