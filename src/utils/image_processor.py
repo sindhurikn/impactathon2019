@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-class ProcessNightImage:
+class ImageProcessor:
     def __init__(self, input_image):
         self.input_image = input_image
 
@@ -23,13 +23,10 @@ class ProcessNightImage:
         output_image = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
         return output_image
 
-    def change_brightness(self, brightness_percent):
-        pass
-
-    def convert_to_black_or_white(self):
+    def convert_to_bw_otsu(self):
         (thresh, im_bw) = cv2.threshold(self.input_image, 128, 255,
-                                        cv2.THRESH_BINARY)
-        print("thresh is", thresh)
+                                        cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        # print("thresh is", thresh)
         return im_bw
 
     def convert_to_bw_given_thresh(self, thresh):
